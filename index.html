@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multiplayer Chatbox</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: rgb(23, 23, 23);
+      color: #fff;
+      overflow: hidden;
+    }
+    /* Particles Background */
+    #particles-js {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      top: 0;
+      left: 0;
+      background-color: rgb(23, 23, 23);
+    }
+    /* Main Content Container */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      height: 80vh;
+      margin: 5vh auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      border-radius: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(5px);
+    }
+    h1 {
+      margin: 0 0 20px 0;
+      text-align: center;
+      font-size: 28px;
+      color: #f0f0f0;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    /* Chatbox */
+    #chatbox {
+      flex: 1;
+      width: calc(100% - 30px); /* Adjust for padding */
+      background: rgba(0, 0, 0, 0.4);
+      padding: 15px;
+      border-radius: 10px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+    }
+    /* Message Container */
+    .message-input {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+      width: 100%;
+    }
+    #message {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      border-radius: 25px;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 16px;
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    #message:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+    #message::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+    button {
+      padding: 15px 25px;
+      border: none;
+      border-radius: 25px;
+      background: linear-gradient(135deg, #4a90e2, #8e44ad);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+      background: linear-gradient(135deg, #5da0f2, #9e54bd);
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    /* Message styling */
+    .chat-message {
+      margin-bottom: 12px;
+      padding: 10px 15px;
+      border-radius: 18px;
+      max-width: 80%;
+      word-wrap: break-word;
+      animation: fadeIn 0.3s ease;
+      align-self: flex-start; /* Default position */
+    }
+    .received {
+      background: rgba(74, 144, 226, 0.3);
+      border-bottom-left-radius: 5px;
+      margin-right: auto;
+    }
+    .sent {
+      background: rgba(142, 68, 173, 0.3);
+      border-bottom-right-radius: 5px;
+      margin-left: auto;
+      align-self: flex-end;
+    }
+    .username {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Scrollbar styling */
+    #chatbox::-webkit-scrollbar {
+      width: 8px;
+    }
+    #chatbox::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+    #chatbox::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
+    #chatbox::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    /* User authentication */
+    .auth-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    #username {
+      padding: 15px;
+      border-radius: 25px;
+      border: none;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 16px;
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+    }
+    #username:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+    #join-chat {
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      font-size: 16px;
+      padding: 15px 25px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      min-height: 50px;
+    }
+    #join-chat:hover {
+      background: linear-gradient(135deg, #7a21db, #3585fc);
+    }
+    /* Responsive design */
+    @media (max-width: 850px) {
+      .container {
+        max-width: 90%;
+        margin: 5vh auto;
+        height: 85vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Particles.js Background -->
+  <div id="particles-js"></div>
+  
+  <!-- Chatbox Container -->
+  <div class="container">
+    <h1>Multiplayer Chatbox</h1>
+    
+    <!-- User Authentication -->
+    <div class="auth-container" id="auth-container">
+      <input type="text" id="username" placeholder="Enter your username" />
+      <button id="join-chat">Join Chat</button>
+    </div>
+    
+    <div id="chatbox">
+      <!-- Messages will appear here -->
+    </div>
+    <div class="message-input" id="message-form" style="display: none;">
+      <input type="text" id="message" placeholder="Type a message..." />
+      <button id="send">Send</button>
+    </div>
+  </div>
+
+  <!-- Particles.js Script -->
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Initialize particles.js
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: '#ffffff' },
+        shape: { type: 'circle' },
+        opacity: { value: 0.5 },
+        size: { value: 3, random: true },
+        line_linked: { enable: true, distance: 150, color: '#ffffff', opacity: 0.4, width: 1 },
+        move: { enable: true, speed: 2 }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: {
+          onhover: { enable: true, mode: 'grab' },
+          onclick: { enable: true, mode: 'push' }
+        },
+        modes: {
+          grab: { distance: 140, line_linked: { opacity: 1 } },
+          push: { particles_nb: 4 }
+        }
+      },
+      retina_detect: true
+    });
+
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgKlNFCDRDfr6SV7tT2uZqfPN4f0v551w",
+      authDomain: "fedschat-2ffc5.firebaseapp.com",
+      projectId: "fedschat-2ffc5",
+      storageBucket: "fedschat-2ffc5.firebasestorage.app",
+      messagingSenderId: "740933901145",
+      appId: "1:740933901145:web:7de34f3d3967ec7f374a48",
+      measurementId: "G-N19T86R6Y3"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const messagesRef = db.collection('messages');
+
+    // Chat functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const chatbox = document.getElementById('chatbox');
+      const messageInput = document.getElementById('message');
+      const sendButton = document.getElementById('send');
+      const usernameInput = document.getElementById('username');
+      const joinButton = document.getElementById('join-chat');
+      const authContainer = document.getElementById('auth-container');
+      const messageForm = document.getElementById('message-form');
+      
+      let currentUser = null;
+
+      // Join chat with username
+      joinButton.addEventListener('click', function() {
+        const username = usernameInput.value.trim();
+        if (username) {
+          currentUser = username;
+          authContainer.style.display = 'none';
+          messageForm.style.display = 'flex';
+          
+          // Add welcome message
+          addSystemMessage(`Welcome to the chat, ${username}!`);
+          
+          // Start listening for messages
+          startListeningForMessages();
+        }
+      });
+
+      // Function to add a message to the chatbox
+      function addMessage(message) {
+        const messageElem = document.createElement('div');
+        messageElem.classList.add('chat-message');
+        messageElem.classList.add(message.username === currentUser ? 'sent' : 'received');
+        
+        const usernameElem = document.createElement('div');
+        usernameElem.classList.add('username');
+        usernameElem.textContent = message.username;
+        
+        const textElem = document.createElement('div');
+        textElem.textContent = message.text;
+        
+        messageElem.appendChild(usernameElem);
+        messageElem.appendChild(textElem);
+        
+        chatbox.appendChild(messageElem);
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }
+
+      // Function to add a system message
+      function addSystemMessage(text) {
+        const messageElem = document.createElement('div');
+        messageElem.classList.add('chat-message');
+        messageElem.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+        messageElem.style.textAlign = 'center';
+        messageElem.style.alignSelf = 'center';
+        messageElem.textContent = text;
+        chatbox.appendChild(messageElem);
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }
+
+      // Send message on button click
+      sendButton.addEventListener('click', sendMessage);
+      
+      // Send message on Enter key
+      messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          sendMessage();
+        }
+      });
+
+      function sendMessage() {
+        const text = messageInput.value.trim();
+        if (text && currentUser) {
+          // Add message to Firebase
+          messagesRef.add({
+            username: currentUser,
+            text: text,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          })
+          .then(() => {
+            messageInput.value = '';
+          })
+          .catch(error => {
+            console.error("Error adding message: ", error);
+            addSystemMessage("Error sending message. Please try again.");
+          });
+        }
+      }
+
+      // Listen for new messages
+      function startListeningForMessages() {
+        messagesRef.orderBy('timestamp', 'asc')
+          .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+              if (change.type === 'added') {
+                const message = change.doc.data();
+                if (message.timestamp) { // Only show messages with timestamps (fully processed by server)
+                  addMessage(message);
+                }
+              }
+            });
+            chatbox.scrollTop = chatbox.scrollHeight;
+          }, error => {
+            console.error("Error listening for messages: ", error);
+            addSystemMessage("Error connecting to chat. Please refresh the page.");
+          });
+      }
+    });
+  </script>
+</body>
+</html>
