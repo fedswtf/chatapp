@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Multiplayer Chatbox</title>
+  <title>FedsChat</title>
   <style>
     body, html {
       margin: 0;
@@ -208,7 +208,7 @@
   
   <!-- Chatbox Container -->
   <div class="container">
-    <h1>Multiplayer Chatbox</h1>
+    <h1>FedsChat</h1>
     
     <!-- User Authentication -->
     <div class="auth-container" id="auth-container">
@@ -280,107 +280,58 @@
       const chatbox = document.getElementById('chatbox');
       const messageInput = document.getElementById('message');
       const sendButton = document.getElementById('send');
-      const usernameInput = document.getElementById('username');
       const joinButton = document.getElementById('join-chat');
-      const authContainer = document.getElementById('auth-container');
+      const usernameInput = document.getElementById('username');
       const messageForm = document.getElementById('message-form');
-      
+      const authContainer = document.getElementById('auth-container');
       let currentUser = null;
 
-      // Join chat with username
+      // Listen for join button click
       joinButton.addEventListener('click', function() {
         const username = usernameInput.value.trim();
         if (username) {
           currentUser = username;
           authContainer.style.display = 'none';
           messageForm.style.display = 'flex';
-          
-          // Add welcome message
-          addSystemMessage(`Welcome to the chat, ${username}!`);
-          
-          // Start listening for messages
           startListeningForMessages();
         }
       });
 
-      // Function to add a message to the chatbox
-      function addMessage(message) {
-        const messageElem = document.createElement('div');
-        messageElem.classList.add('chat-message');
-        messageElem.classList.add(message.username === currentUser ? 'sent' : 'received');
-        
-        const usernameElem = document.createElement('div');
-        usernameElem.classList.add('username');
-        usernameElem.textContent = message.username;
-        
-        const textElem = document.createElement('div');
-        textElem.textContent = message.text;
-        
-        messageElem.appendChild(usernameElem);
-        messageElem.appendChild(textElem);
-        
-        chatbox.appendChild(messageElem);
-        chatbox.scrollTop = chatbox.scrollHeight;
-      }
-
-      // Function to add a system message
-      function addSystemMessage(text) {
-        const messageElem = document.createElement('div');
-        messageElem.classList.add('chat-message');
-        messageElem.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-        messageElem.style.textAlign = 'center';
-        messageElem.style.alignSelf = 'center';
-        messageElem.textContent = text;
-        chatbox.appendChild(messageElem);
-        chatbox.scrollTop = chatbox.scrollHeight;
-      }
-
-      // Send message on button click
-      sendButton.addEventListener('click', sendMessage);
-      
-      // Send message on Enter key
-      messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-          sendMessage();
-        }
-      });
-
-      function sendMessage() {
+      // Send message function
+      sendButton.addEventListener('click', function() {
         const text = messageInput.value.trim();
         if (text && currentUser) {
-          // Add message to Firebase
           messagesRef.add({
             username: currentUser,
             text: text,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          })
-          .then(() => {
-            messageInput.value = '';
-          })
-          .catch(error => {
+          }).then(() => {
+            messageInput.value = ''; // Clear input
+          }).catch(error => {
             console.error("Error adding message: ", error);
-            addSystemMessage("Error sending message. Please try again.");
           });
         }
+      });
+
+      // Display messages function
+      function addMessage(message) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('chat-message', message.username === currentUser ? 'sent' : 'received');
+        messageElement.innerHTML = `<div class="username">${message.username}</div><div>${message.text}</div>`;
+        chatbox.appendChild(messageElement);
+        chatbox.scrollTop = chatbox.scrollHeight;
       }
 
-      // Listen for new messages
+      // Start listening for new messages
       function startListeningForMessages() {
-        messagesRef.orderBy('timestamp', 'asc')
-          .onSnapshot(snapshot => {
-            snapshot.docChanges().forEach(change => {
-              if (change.type === 'added') {
-                const message = change.doc.data();
-                if (message.timestamp) { // Only show messages with timestamps (fully processed by server)
-                  addMessage(message);
-                }
-              }
-            });
-            chatbox.scrollTop = chatbox.scrollHeight;
-          }, error => {
-            console.error("Error listening for messages: ", error);
-            addSystemMessage("Error connecting to chat. Please refresh the page.");
+        messagesRef.orderBy('timestamp', 'asc').onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              const message = change.doc.data();
+              addMessage(message);
+            }
           });
+        });
       }
     });
   </script>
