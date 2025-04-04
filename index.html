@@ -176,7 +176,7 @@
           currentUser = username;
           authContainer.style.display = 'none';
           messageForm.style.display = 'flex';
-          startListeningForMessages(); // Start listening for messages after joining
+          startFetchingMessages(); // Start periodically fetching messages after joining
         }
       });
 
@@ -205,15 +205,22 @@
         chatbox.scrollTop = chatbox.scrollHeight;
       }
 
-      // Start listening for new messages in Firestore
-      function startListeningForMessages() {
-        messagesRef.orderBy('timestamp', 'asc').onSnapshot(snapshot => {
-          snapshot.docChanges().forEach(change => {
-            if (change.type === 'added') {
-              const message = change.doc.data();
-              addMessage(message);
-            }
+      // Fetch messages periodically
+      function startFetchingMessages() {
+        setInterval(() => {
+          fetchMessages();
+        }, 5000); // Check every 5 seconds
+      }
+
+      // Fetch messages from Firestore
+      function fetchMessages() {
+        messagesRef.orderBy('timestamp', 'asc').get().then(snapshot => {
+          snapshot.forEach(doc => {
+            const message = doc.data();
+            addMessage(message);
           });
+        }).catch(error => {
+          console.error("Error fetching messages: ", error);
         });
       }
     });
